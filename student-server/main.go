@@ -5,7 +5,7 @@ import (
 	"net"
 
 	"github.com/f3rcho/grpc-pro/database"
-	studentpb "github.com/f3rcho/grpc-pro/proto"
+	studentpb "github.com/f3rcho/grpc-pro/proto/student"
 	"github.com/f3rcho/grpc-pro/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -30,6 +30,7 @@ func main() {
 	studentpb.RegisterStudentServiceServer(s, server)
 
 	reflection.Register(s)
+	log.Println("Server running on :5060")
 
 	if err := s.Serve(list); err != nil {
 		log.Fatalf("Error serving: %s", err.Error())

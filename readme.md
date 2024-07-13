@@ -1,4 +1,4 @@
-# pks
+# pkg
 ```bash
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 ```
@@ -32,3 +32,9 @@ go get google.golang.org/grpc
 	docker build . -t db-grpc
   docker run -p 54321:5432 db-grpc
 ```
+
+# Metodología:
+
+1. Crear el archivo .proto primero.
+2. Compilarlo para generar los paquetes de Go.
+3. Implementar el protobuffer a nivel de servidor, a nivel de base de datos y a nivel de interacción con gRPC.

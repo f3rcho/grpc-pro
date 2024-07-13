@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/f3rcho/grpc-pro/models"
-	studentpb "github.com/f3rcho/grpc-pro/proto"
+	studentpb "github.com/f3rcho/grpc-pro/proto/student"
 	"github.com/f3rcho/grpc-pro/repository"
 )
 
