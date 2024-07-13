@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/f3rcho/grpc-pro/models"
+	_ "github.com/lib/pq"
 )
 
 type PostgresRepository struct {

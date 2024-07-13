@@ -26,3 +26,9 @@ go get github.com/lib/pq
 ```bash
 go get google.golang.org/grpc
 ```
+
+## Docker
+```bash
+	docker build . -t db-grpc
+  docker run -p 54321:5432 db-grpc
+```
