@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.4.0
 // - protoc             v5.27.1
-// source: proto/test.proto
+// source: proto/test/test.proto
 
 package testpb
 
@@ -144,5 +144,5 @@ var TestService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/test.proto",
+	Metadata: "proto/test/test.proto",
 }
