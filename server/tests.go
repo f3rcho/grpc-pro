@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"io"
 
 	"github.com/f3rcho/grpc-pro/models"
 	testpb "github.com/f3rcho/grpc-pro/proto/test"
@@ -45,4 +46,26 @@ func (s *TestServer) SetTest(ctx context.Context, req *testpb.Test) (*testpb.Set
 		Id:   test.ID,
 		Name: test.Name,
 	}, nil
+}
+func (s *TestServer) SetQuestions(stream testpb.TestService_SetQuestionsServer) error {
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&testpb.SetQuestionResponse{Ok: true})
+		}
+		if err != nil {
+			return err
+		}
+		question := &models.Question{
+			ID:       msg.GetId(),
+			Question: msg.GetQuestion(),
+			Answer:   msg.GetAnswer(),
+			TestID:   msg.GetTestId(),
+		}
+		err = s.repo.SetQuestions(context.Background(), question)
+
+		if err != nil {
+			return stream.SendAndClose(&testpb.SetQuestionResponse{Ok: false})
+		}
+	}
 }

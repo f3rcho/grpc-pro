@@ -32,6 +32,14 @@ go get google.golang.org/grpc
 	docker build . -t db-grpc
   docker run -p 54321:5432 db-grpc
 ```
+docker-compose ps
+docker-compose logs -f postgres
+docker-compose exec postgres bash
+Instead of using the docker container ip, just use the name of the service when connection to pgadmin. Host name/addres=postgress
+
+docker ps
+docker inspect
+
 
 # Metodología:
 

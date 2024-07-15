@@ -18,7 +18,7 @@ func main() {
 		log.Fatalf("Error listening: %s", err.Error())
 	}
 
-	repo, err := database.NewPostgresRepository("postgres://postgres:postgres@localhost:54321/postgres?sslmode=disable")
+	repo, err := database.NewPostgresRepository("postgres://root:123456@localhost:5432/mydb?sslmode=disable")
 
 	server := server.NewTestServer(repo)
 
