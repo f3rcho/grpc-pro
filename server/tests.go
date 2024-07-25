@@ -3,8 +3,11 @@ package server
 import (
 	"context"
 	"io"
+	"log"
+	"time"
 
 	"github.com/f3rcho/grpc-pro/models"
+	studentpb "github.com/f3rcho/grpc-pro/proto/student"
 	testpb "github.com/f3rcho/grpc-pro/proto/test"
 	"github.com/f3rcho/grpc-pro/repository"
 )
@@ -68,4 +71,46 @@ func (s *TestServer) SetQuestions(stream testpb.TestService_SetQuestionsServer) 
 			return stream.SendAndClose(&testpb.SetQuestionResponse{Ok: false})
 		}
 	}
+}
+
+func (s *TestServer) EnrollStudents(stream testpb.TestService_EnrollStudentsServer) error {
+	for {
+		msg, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&testpb.SetQuestionResponse{Ok: true})
+		}
+		if err != nil {
+			log.Fatalf("Error reading stream: %v", err)
+			return err
+		}
+		enrollment := &models.Enrollment{
+			StudentID: msg.GetStudentId(),
+			TestID:    msg.GetTestId(),
+		}
+		err = s.repo.SetEnrollment(context.Background(), enrollment)
+
+		if err != nil {
+			return stream.SendAndClose(&testpb.SetQuestionResponse{Ok: false})
+		}
+	}
+}
+
+func (s *TestServer) GetStudentsPerTest(req *testpb.GetStudentsPerTestRequest, stream testpb.TestService_GetStudentsPerTestServer) error {
+	students, err := s.repo.GetStudentsPerTest(context.Background(), req.GetTestId())
+	if err != nil {
+		return err
+	}
+	for _, student := range students {
+		student := &studentpb.Student{
+			Id:   student.ID,
+			Name: student.Name,
+			Age:  student.Age,
+		}
+		err := stream.Send(student)
+		time.Sleep(2 * time.Second) // just to test and see the performance
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
