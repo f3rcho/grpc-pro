@@ -11,9 +11,9 @@ services:
   postgres:
     build: './database'
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: mydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     restart: always
     ports:
       - '5432:5432'
