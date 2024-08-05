@@ -136,3 +136,49 @@ func (repo *PostgresRepository) GetQuestionsPerTest(ctx context.Context, testID 
 	}
 	return questions, nil
 }
+
+func (repo *PostgresRepository) SetAnswer(ctx context.Context, answer *models.Answer) error {
+	_, err := repo.db.ExecContext(ctx, "INSERT INTO answers(student_id, test_id, question_id, answer, correct) VALUES($1, $2, $3, $4, $5)", answer.StudentId, answer.TestId, answer.QuestionId, answer.Answer, answer.Correct)
+	return err
+}
+
+func (repo *PostgresRepository) GetTestScore(ctx context.Context, testID, studentID string) (*models.TestScore, error) {
+	rows, err := repo.db.QueryContext(ctx, "select correct FROM answers WHERE test_id = $1 AND student_id = $2", testID, studentID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		err := rows.Close()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	var answer = models.Answer{}
+	var testScore = models.TestScore{
+		TestID:    testID,
+		StudentID: studentID,
+	}
+
+	for rows.Next() {
+		err := rows.Scan(&answer.Correct)
+
+		if err != nil {
+			return nil, err
+		}
+		testScore.Total += 1
+
+		if answer.Correct {
+			testScore.Ok += 1
+		} else {
+			testScore.Ko += 1
+		}
+
+	}
+	testScore.Score = testScore.Ok * 10 / testScore.Total
+
+	return &testScore, nil
+}

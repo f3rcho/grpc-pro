@@ -116,38 +116,103 @@ func (s *TestServer) GetStudentsPerTest(req *testpb.GetStudentsPerTestRequest, s
 }
 
 func (s *TestServer) TakeTest(stream testpb.TestService_TakeTestServer) error {
-	questions, err := s.repo.GetQuestionsPerTest(context.Background(), "t1")
-	if err != nil {
-		return err
-	}
-
-	i := 0
-	var currentQuestion = &models.Question{}
 	for {
-		if i < len(questions) {
-			currentQuestion = questions[i]
-		}
+		msg, err := stream.Recv()
 
-		if i <= len(questions) {
-			questionToSend := &testpb.Question{
-				Id:       currentQuestion.ID,
-				Question: currentQuestion.Question,
-			}
-			err := stream.Send(questionToSend)
-			if err != nil {
-				return err
-			}
-			i++
-		}
-		answer, err := stream.Recv()
-		if err == io.EOF {
-			log.Printf("Error sending question: %v", err)
+		if err != io.EOF {
 			return nil
 		}
+
 		if err != nil {
-			log.Printf("Error receiving answer: %v", err)
 			return err
 		}
-		log.Println("Answer for question:", currentQuestion.Question, "is", answer.GetAnswer())
+		questions, err := s.repo.GetQuestionsPerTest(context.Background(), msg.GetTestId())
+
+		if err != nil {
+			return err
+		}
+		var currentQuestion = &models.Question{}
+		i := 0
+		lenQuestions := len(questions)
+		lenQuestions32 := int32(lenQuestions)
+		for {
+			if i < lenQuestions {
+				currentQuestion = questions[i]
+				questionToSend := &testpb.QuestionPerTest{
+					Id:       currentQuestion.ID,
+					Question: currentQuestion.Question,
+					Ok:       false,
+					Current:  int32(i + 1),
+					Total:    lenQuestions32,
+				}
+
+				err := stream.Send(questionToSend)
+				if err != nil {
+					log.Printf("Error sending question: %v", err)
+					return err
+				}
+				i++
+
+				answer, err := stream.Recv()
+				if err != io.EOF {
+					return nil
+				}
+
+				if err != nil {
+					log.Printf("Error receiving answer: %v", err)
+					return err
+				}
+
+				log.Println("Answer: ", answer.GetAnswer())
+				answerModel := &models.Answer{
+					TestId:     msg.GetTestId(),
+					QuestionId: currentQuestion.ID,
+					StudentId:  msg.GetStudentId(),
+					Answer:     answer.Answer,
+					Correct:    (answer.Answer == currentQuestion.Answer),
+				}
+
+				err = s.repo.SetAnswer(context.Background(), answerModel)
+
+				if err != nil {
+					return err
+				}
+			} else {
+				questionToSend := &testpb.QuestionPerTest{
+					Id:       "",
+					Question: "",
+					Ok:       true,
+					Current:  int32(0),
+					Total:    int32(0),
+				}
+
+				err := stream.Send(questionToSend)
+				if err != io.EOF {
+					return nil
+				}
+
+				if err != nil {
+					return err
+				}
+
+				break
+			}
+		}
 	}
+}
+
+func (s *TestServer) GetTestScore(ctx context.Context, req *testpb.GetTestScoreRequest) (*testpb.TestScore, error) {
+	testScore, err := s.repo.GetTestScore(ctx, req.TestId, req.StudentId)
+
+	if err != nil {
+		return nil, err
+	}
+	return &testpb.TestScore{
+		TestId:    testScore.TestID,
+		StudentId: testScore.StudentID,
+		Ok:        testScore.Ok,
+		Ko:        testScore.Ko,
+		Total:     testScore.Total,
+		Score:     testScore.Score,
+	}, nil
 }

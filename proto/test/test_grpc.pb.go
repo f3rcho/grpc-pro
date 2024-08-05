@@ -26,6 +26,7 @@ const (
 	TestService_EnrollStudents_FullMethodName     = "/test.TestService/EnrollStudents"
 	TestService_GetStudentsPerTest_FullMethodName = "/test.TestService/GetStudentsPerTest"
 	TestService_TakeTest_FullMethodName           = "/test.TestService/TakeTest"
+	TestService_GetTestScore_FullMethodName       = "/test.TestService/GetTestScore"
 )
 
 // TestServiceClient is the client API for TestService service.
@@ -38,6 +39,7 @@ type TestServiceClient interface {
 	EnrollStudents(ctx context.Context, opts ...grpc.CallOption) (TestService_EnrollStudentsClient, error)
 	GetStudentsPerTest(ctx context.Context, in *GetStudentsPerTestRequest, opts ...grpc.CallOption) (TestService_GetStudentsPerTestClient, error)
 	TakeTest(ctx context.Context, opts ...grpc.CallOption) (TestService_TakeTestClient, error)
+	GetTestScore(ctx context.Context, in *GetTestScoreRequest, opts ...grpc.CallOption) (*TestScore, error)
 }
 
 type testServiceClient struct {
@@ -183,7 +185,7 @@ func (c *testServiceClient) TakeTest(ctx context.Context, opts ...grpc.CallOptio
 
 type TestService_TakeTestClient interface {
 	Send(*TakeTestRequest) error
-	Recv() (*Question, error)
+	Recv() (*QuestionPerTest, error)
 	grpc.ClientStream
 }
 
@@ -195,12 +197,22 @@ func (x *testServiceTakeTestClient) Send(m *TakeTestRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *testServiceTakeTestClient) Recv() (*Question, error) {
-	m := new(Question)
+func (x *testServiceTakeTestClient) Recv() (*QuestionPerTest, error) {
+	m := new(QuestionPerTest)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (c *testServiceClient) GetTestScore(ctx context.Context, in *GetTestScoreRequest, opts ...grpc.CallOption) (*TestScore, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TestScore)
+	err := c.cc.Invoke(ctx, TestService_GetTestScore_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // TestServiceServer is the server API for TestService service.
@@ -213,6 +225,7 @@ type TestServiceServer interface {
 	EnrollStudents(TestService_EnrollStudentsServer) error
 	GetStudentsPerTest(*GetStudentsPerTestRequest, TestService_GetStudentsPerTestServer) error
 	TakeTest(TestService_TakeTestServer) error
+	GetTestScore(context.Context, *GetTestScoreRequest) (*TestScore, error)
 	mustEmbedUnimplementedTestServiceServer()
 }
 
@@ -237,6 +250,9 @@ func (UnimplementedTestServiceServer) GetStudentsPerTest(*GetStudentsPerTestRequ
 }
 func (UnimplementedTestServiceServer) TakeTest(TestService_TakeTestServer) error {
 	return status.Errorf(codes.Unimplemented, "method TakeTest not implemented")
+}
+func (UnimplementedTestServiceServer) GetTestScore(context.Context, *GetTestScoreRequest) (*TestScore, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTestScore not implemented")
 }
 func (UnimplementedTestServiceServer) mustEmbedUnimplementedTestServiceServer() {}
 
@@ -365,7 +381,7 @@ func _TestService_TakeTest_Handler(srv interface{}, stream grpc.ServerStream) er
 }
 
 type TestService_TakeTestServer interface {
-	Send(*Question) error
+	Send(*QuestionPerTest) error
 	Recv() (*TakeTestRequest, error)
 	grpc.ServerStream
 }
@@ -374,7 +390,7 @@ type testServiceTakeTestServer struct {
 	grpc.ServerStream
 }
 
-func (x *testServiceTakeTestServer) Send(m *Question) error {
+func (x *testServiceTakeTestServer) Send(m *QuestionPerTest) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -384,6 +400,24 @@ func (x *testServiceTakeTestServer) Recv() (*TakeTestRequest, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func _TestService_GetTestScore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTestScoreRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TestServiceServer).GetTestScore(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TestService_GetTestScore_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TestServiceServer).GetTestScore(ctx, req.(*GetTestScoreRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // TestService_ServiceDesc is the grpc.ServiceDesc for TestService service.
@@ -400,6 +434,10 @@ var TestService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetTest",
 			Handler:    _TestService_SetTest_Handler,
+		},
+		{
+			MethodName: "GetTestScore",
+			Handler:    _TestService_GetTestScore_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
